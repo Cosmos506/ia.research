@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyse IA — Tableau de bord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0f5;
+    --muted: #888899;
+    --accent: #7c6dfa;
+    --accent2: #4fd1a5;
+    --accent3: #f5a623;
+    --accent4: #e84d7a;
+    --card-bg: #14141c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2.5rem;
+    display: flex; align-items: center; gap: 2rem; height: 60px;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); letter-spacing: -0.5px; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 0.25rem; margin-left: auto; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500;
+    padding: 6px 14px; border-radius: 6px; transition: all 0.15s;
+    cursor: pointer;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); background: var(--bg3); }
+  .pill-count {
+    background: var(--accent); color: white;
+    font-size: 11px; padding: 2px 7px; border-radius: 99px; margin-left: 4px; font-family: 'Syne',sans-serif;
+  }
+
+  /* ── SECTIONS ── */
+  section { display: none; padding: 3rem 2.5rem; max-width: 1200px; margin: 0 auto; }
+  section.active { display: block; }
+
+  /* ── HERO ── */
+  .hero { padding-top: 4rem; padding-bottom: 2rem; }
+  .hero-tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); background: rgba(124,109,250,0.1); border: 1px solid rgba(124,109,250,0.2); padding: 4px 12px; border-radius: 99px; margin-bottom: 1.5rem; }
+  .hero h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 1rem; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 16px; max-width: 560px; margin-bottom: 2.5rem; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 3rem; }
+  .stat-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+  }
+  .stat-card .val { font-family: 'Syne',sans-serif; font-size: 2rem; font-weight: 800; }
+  .stat-card .lbl { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .stat-card.accent1 .val { color: var(--accent); }
+  .stat-card.accent2 .val { color: var(--accent2); }
+  .stat-card.accent3 .val { color: var(--accent3); }
+  .stat-card.accent4 .val { color: var(--accent4); }
+
+  /* ── SECTION HEADER ── */
+  .sec-header { margin-bottom: 2rem; }
+  .sec-header h2 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 0.3rem; }
+  .sec-header p { color: var(--muted); font-size: 14px; }
+
+  /* ── CARDS GRID ── */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+  .ia-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.5rem; cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .ia-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent-color, var(--accent)); opacity: 0.7;
+  }
+  .ia-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .ia-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+  .ia-name { font-family: 'Syne',sans-serif; font-size: 1.1rem; font-weight: 700; }
+  .ia-rank { font-family: 'Syne',sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--accent-color, var(--accent)); }
+  .ia-score-big { font-family: 'Syne',sans-serif; font-size: 2.2rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .ia-score-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; }
+  .criteria-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .crit-badge {
+    font-size: 11px; padding: 3px 8px; border-radius: 6px;
+    background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border);
+  }
+  .crit-badge span { color: var(--text); font-weight: 500; }
+
+  /* Stars */
+  .stars { display: flex; gap: 2px; margin: 6px 0; }
+  .star { width: 8px; height: 8px; border-radius: 2px; background: var(--border); }
+  .star.filled { background: var(--accent-color, var(--accent)); }
+
+  /* ── CLASSEMENT ── */
+  .podium { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 3rem; align-items: end; }
+  .podium-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.5rem 1.25rem; text-align: center; position: relative;
+  }
+  .podium-card.p1 { border-color: rgba(245,166,35,0.4); order: 2; padding-top: 2.5rem; }
+  .podium-card.p2 { order: 1; }
+  .podium-card.p3 { order: 3; }
+  .podium-medal { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+  .podium-ia { font-family: 'Syne',sans-serif; font-size: 1.1rem; font-weight: 700; }
+  .podium-score { font-family: 'Syne',sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent3); }
+
+  /* Tableau classement global */
+  .ranking-table { width: 100%; border-collapse: collapse; }
+  .ranking-table th {
+    text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--border);
+  }
+  .ranking-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .ranking-table tr:last-child td { border-bottom: none; }
+  .ranking-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .rank-num { font-family: 'Syne',sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--muted); }
+  .rank-num.top3 { color: var(--accent3); }
+  .score-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; width: 120px; }
+  .score-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+  .tag-small {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 5px;
+    background: rgba(124,109,250,0.12); color: var(--accent); border: 1px solid rgba(124,109,250,0.2);
+  }
+
+  /* ── MATRICE ── */
+  .matrix-wrap { overflow-x: auto; }
+  .matrix-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+  .matrix-table th, .matrix-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: center; white-space: nowrap; }
+  .matrix-table thead th { background: var(--bg3); color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .matrix-table td { font-family: 'Syne',sans-serif; font-weight: 500; }
+  .matrix-table .row-header { text-align: left; font-family: 'Syne',sans-serif; font-weight: 600; background: var(--bg3); font-size: 12px; }
+  .matrix-table .diagonal { background: rgba(255,255,255,0.03); color: var(--muted); font-size: 11px; }
+  .high { color: #4fd1a5; }
+  .mid { color: #f5a623; }
+  .low { color: #e84d7a; }
+
+  /* ── FICHES ── */
+  .fiche-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2rem; }
+  .fiche-btn {
+    font-family: 'Syne',sans-serif; font-size: 12px; font-weight: 600;
+    padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card-bg); color: var(--muted); cursor: pointer; transition: all 0.15s;
+  }
+  .fiche-btn:hover, .fiche-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(124,109,250,0.08); }
+  .fiche-content { display: none; }
+  .fiche-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .fiche-main { grid-column: 1 / -1; }
+  .fiche-head { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 1.5rem; }
+  .fiche-avatar {
+    width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne',sans-serif; font-size: 1.2rem; font-weight: 800; flex-shrink: 0;
+  }
+  .fiche-title h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+  .fiche-title .sub { color: var(--muted); font-size: 13px; }
+  .info-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem;
+  }
+  .info-card h4 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 0.75rem; }
+  .info-card p { font-size: 13px; line-height: 1.65; color: var(--muted); }
+  .info-card p strong { color: var(--text); font-weight: 500; }
+  .criteria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .crit-item { background: var(--bg3); border-radius: 8px; padding: 10px 12px; }
+  .crit-item .crit-name { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .crit-item .crit-val { font-family: 'Syne',sans-serif; font-size: 1.3rem; font-weight: 700; }
+  .bar-full { height: 4px; background: var(--bg3); border-radius: 2px; margin-top: 4px; overflow:hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; }
+  .evaluations-list { list-style: none; }
+  .eval-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .eval-item:last-child { border-bottom: none; }
+  .eval-by { color: var(--muted); }
+  .eval-score { font-family: 'Syne',sans-serif; font-weight: 700; }
+
+  /* ── CHARTS ── */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .chart-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; }
+  .chart-card h3 { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 1.25rem; text-transform: uppercase; letter-spacing: 1px; font-family: 'Syne', sans-serif; }
+  .chart-full { grid-column: 1 / -1; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 1rem; font-size: 12px; color: var(--muted); }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; background: var(--bg3); border-radius: 10px; padding: 4px; width: fit-content; }
+  .tab {
+    font-family: 'Syne',sans-serif; font-size: 13px; font-weight: 600;
+    padding: 7px 18px; border-radius: 7px; cursor: pointer;
+    color: var(--muted); transition: all 0.15s;
+  }
+  .tab.active { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); }
+
+  /* ── BIAIS SECTION ── */
+  .biais-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+  .biais-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .biais-card h4 { font-family: 'Syne',sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 0.75rem; }
+  .biais-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .biais-row:last-child { border-bottom: none; }
+  .biais-row .lbl { color: var(--muted); }
+  .biais-row .val { font-weight: 500; }
+  .val.pos { color: var(--accent2); }
+  .val.neg { color: var(--accent4); }
+  .val.neu { color: var(--muted); }
+
+  /* footer */
+  .page-footer { text-align: center; padding: 3rem; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 2rem; }
+
+  /* ── RESPONSIVE ── */
+
+  /* Tablette large (≤900px) */
+  @media (max-width: 900px) {
+    nav { padding: 0 1.25rem; gap: 1rem; }
+    .nav-links a { padding: 6px 10px; font-size: 12px; }
+    section { padding: 2rem 1.25rem; }
+    .hero { padding-top: 2.5rem; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-full { grid-column: 1 / -1; }
+    .podium { grid-template-columns: 1fr 1fr 1fr; }
+    .ranking-table th:nth-child(4),
+    .ranking-table td:nth-child(4) { display: none; }
+    .fiche-content.active { grid-template-columns: 1fr; }
+    .fiche-main { grid-column: 1 / -1; }
+  }
+
+  /* Mobile (≤640px) */
+  @media (max-width: 640px) {
+    nav { height: auto; flex-wrap: wrap; padding: 0.75rem 1rem; gap: 0.5rem; }
+    .nav-logo { font-size: 16px; }
+    .nav-links { margin-left: 0; width: 100%; overflow-x: auto; padding-bottom: 4px; flex-wrap: nowrap; gap: 2px; }
+    .nav-links a { white-space: nowrap; font-size: 11px; padding: 5px 10px; }
+    section { padding: 1.5rem 1rem; }
+    .hero { padding-top: 1.5rem; }
+    .hero h1 { font-size: 1.9rem; letter-spacing: -1px; }
+    .hero p { font-size: 14px; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .stat-card .val { font-size: 1.6rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .podium { grid-template-columns: 1fr; gap: 0.75rem; }
+    .podium-card.p1 { order: 0; padding-top: 1.5rem; }
+    .podium-card.p2 { order: 1; }
+    .podium-card.p3 { order: 2; }
+    .tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+    .tab { white-space: nowrap; font-size: 12px; padding: 6px 12px; }
+    .ranking-table th:nth-child(5),
+    .ranking-table td:nth-child(5),
+    .ranking-table th:nth-child(6),
+    .ranking-table td:nth-child(6),
+    .ranking-table th:nth-child(7),
+    .ranking-table td:nth-child(7),
+    .ranking-table th:nth-child(8),
+    .ranking-table td:nth-child(8) { display: none; }
+    .ranking-table th, .ranking-table td { padding: 10px 10px; font-size: 13px; }
+    .score-bar { width: 80px; }
+    .sec-header h2 { font-size: 1.4rem; }
+    .charts-grid { gap: 1rem; }
+    .chart-card { padding: 1rem; }
+    .fiche-content.active { grid-template-columns: 1fr; }
+    .fiche-nav { gap: 6px; }
+    .fiche-btn { font-size: 11px; padding: 5px 10px; }
+    .criteria-grid { grid-template-columns: 1fr 1fr; }
+    .biais-grid { grid-template-columns: 1fr; }
+    .matrix-table th, .matrix-table td { padding: 7px 8px; font-size: 11px; }
+  }
+
+  /* Très petit (≤380px) */
+  @media (max-width: 380px) {
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .stat-card { padding: 1rem; }
+    .stat-card .val { font-size: 1.4rem; }
+    .hero h1 { font-size: 1.6rem; }
+    .criteria-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">IA<span>.</span>Research</div>
+  <div class="nav-links">
+    <a class="active" onclick="showSection('overview')">Aperçu</a>
+    <a onclick="showSection('classement')">Classement</a>
+    <a onclick="showSection('graphiques')">Graphiques</a>
+    <a onclick="showSection('fiches')">Fiches IA</a>
+    <a onclick="showSection('matrice')">Matrice croisée</a>
+    <a onclick="showSection('biais')">Biais d'évaluation</a>
+  </div>
+</nav>
+
+<!-- ══════════ APERÇU ══════════ -->
+<section id="overview" class="active hero">
+  <div class="hero-tag">Recherche & Analyse</div>
+  <h1>Comparatif<br>des <em>10 IA</em> majeures</h1>
+  <p>Évaluées par leurs pairs — chaque IA a noté les autres selon 4 critères : code, raisonnement, créativité et fiabilité.</p>
+
+  <div class="stat-row">
+    <div class="stat-card accent1"><div class="val">10</div><div class="lbl">IA analysées</div></div>
+    <div class="stat-card accent2"><div class="val">100</div><div class="lbl">Évaluations croisées</div></div>
+    <div class="stat-card accent3"><div class="val">4</div><div class="lbl">Critères de notation</div></div>
+    <div class="stat-card accent4"><div class="val">10</div><div class="lbl">Évaluateurs différents</div></div>
+  </div>
+
+  <div class="sec-header"><h2>Top IAs — toutes évaluations confondues</h2><p>Score moyen agrégé sur l'ensemble des évaluateurs</p></div>
+  <div class="cards-grid" id="overview-cards"></div>
+</section>
+
+<!-- ══════════ CLASSEMENT ══════════ -->
+<section id="classement">
+  <div class="sec-header"><h2>Classement général</h2><p>Agrégation de tous les classements par évaluateur</p></div>
+
+  <div class="podium" id="podium"></div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(this,'tab-global')">Score moyen global</div>
+    <div class="tab" onclick="switchTab(this,'tab-code')">Code</div>
+    <div class="tab" onclick="switchTab(this,'tab-raisonnement')">Raisonnement</div>
+    <div class="tab" onclick="switchTab(this,'tab-creativite')">Créativité</div>
+    <div class="tab" onclick="switchTab(this,'tab-fiabilite')">Fiabilité</div>
+  </div>
+
+  <div id="tab-global"><table class="ranking-table" id="table-global"></table></div>
+  <div id="tab-code" style="display:none"><table class="ranking-table" id="table-code"></table></div>
+  <div id="tab-raisonnement" style="display:none"><table class="ranking-table" id="table-raisonnement"></table></div>
+  <div id="tab-creativite" style="display:none"><table class="ranking-table" id="table-creativite"></table></div>
+  <div id="tab-fiabilite" style="display:none"><table class="ranking-table" id="table-fiabilite"></table></div>
+</section>
+
+<!-- ══════════ GRAPHIQUES ══════════ -->
+<section id="graphiques">
+  <div class="sec-header"><h2>Visualisations</h2><p>Analyse graphique des données</p></div>
+  <div class="charts-grid">
+    <div class="chart-card chart-full">
+      <h3>Score moyen par IA (toutes évaluations)</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Score moyen agrégé pour chaque IA en combinant toutes les notes reçues de l'ensemble des évaluateurs.</p>
+      <div class="legend-row" id="legend-bar"></div>
+      <div style="position:relative; height:320px;"><canvas id="chart-bar" role="img" aria-label="Scores moyens des 10 IAs"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Radar — comparaison des 4 critères</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Profil des 5 meilleures IAs sur les 4 axes d'évaluation : code, raisonnement, créativité et fiabilité.</p>
+      <div style="position:relative; height:320px;"><canvas id="chart-radar" role="img" aria-label="Comparaison radar des critères par IA"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Classement moyen par évaluateur</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Position moyenne obtenue dans les classements de chaque IA — plus la barre est basse, meilleur est le rang.</p>
+      <div style="position:relative; height:320px;"><canvas id="chart-rank" role="img" aria-label="Classements moyens obtenus"></canvas></div>
+    </div>
+    <div class="chart-card chart-full">
+      <h3>Scores par critère et par IA</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Décomposition des notes de chaque IA sur les 4 critères pour identifier leurs forces et faiblesses spécifiques.</p>
+      <div style="position:relative; height:360px;"><canvas id="chart-grouped" role="img" aria-label="Scores groupés par critère"></canvas></div>
+    </div>
+    <div class="chart-card chart-full">
+      <h3>Score moyen reçu selon l'évaluateur</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Note moyenne que chaque IA attribue aux autres, révélant si certains évaluateurs sont plus généreux ou plus sévères que la moyenne.</p>
+      <div style="position:relative; height:360px;"><canvas id="chart-evaluator" role="img" aria-label="Scores par évaluateur"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FICHES ══════════ -->
+<section id="fiches">
+  <div class="sec-header"><h2>Fiches par IA</h2><p>Détail complet : points forts, faibles, cas d'usage, scores reçus</p></div>
+  <div class="fiche-nav" id="fiche-nav"></div>
+  <div id="fiche-contents"></div>
+</section>
+
+<!-- ══════════ MATRICE ══════════ -->
+<section id="matrice">
+  <div class="sec-header"><h2>Matrice croisée des scores</h2><p>Lignes = IA évaluée · Colonnes = IA qui évalue · Valeur = score moyen reçu</p></div>
+  <div class="matrix-wrap"><table class="matrix-table" id="matrix-table"></table></div>
+</section>
+
+<!-- ══════════ BIAIS ══════════ -->
+<section id="biais">
+  <div class="sec-header"><h2>Analyse des biais d'évaluation</h2><p>Comment chaque IA note les autres par rapport à la moyenne générale</p></div>
+  <div style="display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1.25rem;font-size:13px;color:var(--muted);flex:1;min-width:200px">
+      <span style="color:var(--text);font-weight:600">Moy. donnée</span> — Moyenne des scores attribués par cet évaluateur à toutes les IAs.
+    </div>
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1.25rem;font-size:13px;color:var(--muted);flex:1;min-width:200px">
+      <span style="color:var(--text);font-weight:600">Auto-éval.</span> — Score que cet évaluateur s'est attribué à lui-même.
+    </div>
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1.25rem;font-size:13px;color:var(--muted);flex:1;min-width:200px">
+      <span style="color:var(--text);font-weight:600">Écart global</span> — Moy. donnée par cet évaluateur <em>moins</em> la moyenne générale de tous les scores. <span style="color:#4fd1a5">Positif = généreux</span>, <span style="color:#e84d7a">négatif = sévère</span>.
+    </div>
+  </div>
+  <div class="biais-grid" id="biais-grid"></div>
+  <div style="margin-top: 2rem;">
+    <div class="chart-card">
+      <h3>Auto-évaluation vs moyenne reçue</h3>
+      <div style="position:relative; height:340px;"><canvas id="chart-auto" role="img" aria-label="Comparaison auto-évaluation et notes reçues"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<div class="page-footer">Données issues de la recherche personnelle — 10 IAs × 10 évaluateurs × 4 critères</div>
+
+<script>
+const RAW = [
+  {ia:"ChatGPT",evaluateur:"ChatGPT 5.3",popularite:"Diffusion massive, interface simple, chat généraliste, ecosystème large",forts:"Raisonnement, code, multimodalité, adapté au travail professionnel.",faibles:"Interface qui change le modele et rend l'expérience moins stable. Puissant mais moins transparant",usages:"Assistant généraliste pour tout",code:5,raisonnement:5,creativite:5,fiabilite:4.5,moyenne:4.875,classement:1},
+  {ia:"Claude",evaluateur:"ChatGPT 5.3",popularite:"Bonne qualité de rédaction et une bonne tenue des taches longues.",forts:"Code, raisonnement, lecture longues, taches agentiques. Claude Code",faibles:"Moins tout-terrain grand public, ecosystème plus étroit.",usages:"Code sérieux, rédaction structurée, analyse de documents volumineux",code:5,raisonnement:5,creativite:4.2,fiabilite:4.5,moyenne:4.675,classement:2},
+  {ia:"Gemini",evaluateur:"ChatGPT 5.3",popularite:"Deep Research, Gemini Live, distribution Google",forts:"Multimodalité, contexte long, recherche approfondie",faibles:"Experience fragmentée entre apps",usages:"Multimodal, très long documents, contexte très long",code:4.5,raisonnement:4.5,creativite:4.5,fiabilite:4.2,moyenne:4.425,classement:3},
+  {ia:"Meta IA",evaluateur:"ChatGPT 5.3",popularite:"Distribution, personnalisation, la voix, flux sociaux",forts:"Intégration sociale, création rapide. Multimodal, orienté raisonnement",faibles:"Moins transparent pour les dev. Dépend de l'écosystème Meta.",usages:"Usage social, voix, création d'image/vidéo",code:3.5,raisonnement:3.5,creativite:3.5,fiabilite:3.2,moyenne:3.425,classement:10},
+  {ia:"Copilot",evaluateur:"ChatGPT 5.3",popularite:"Grande distribution, Microsoft 365, Intégrations aux outils de travail",forts:"Productivité de bureau : documents, tableaux, présentation",faibles:"Dépend du produit Microsoft et droits d'accès. Pas de raisonnement pur général",usages:"Travail de bureaux, support interne, comptes rendus",code:4.2,raisonnement:4,creativite:3.8,fiabilite:4,moyenne:4,classement:5},
+  {ia:"Le Chat",evaluateur:"ChatGPT 5.3",popularite:"Plus de contrôle, approche européenne, offre plus déployable en entreprise",forts:"Multilingue, travail d'équipe, recherche, créations d'image. Fort models open-weight",faibles:"Ecosystème et notoriété plus petites.",usages:"Entreprise, confidentialité, multi-langue",code:4.2,raisonnement:4,creativite:3.9,fiabilite:3.8,moyenne:3.975,classement:6},
+  {ia:"DeepSeek",evaluateur:"ChatGPT 5.3",popularite:"Rapport performance/coûts, compatibilité API",forts:"Raisonnement, outillage, agentic workflow, code",faibles:"Qualité et stabilité varient selon le modèle, ecosystème plus petit",usages:"Développement, intégration API, tâches techniques",code:4.5,raisonnement:4.4,creativite:3.7,fiabilite:3.6,moyenne:4.05,classement:4},
+  {ia:"Perplexity",evaluateur:"ChatGPT 5.3",popularite:"Chercher, citer, répondre vite. Outil de recherche poussé",forts:"Recherche web assistée, réponse sourcées, analyses longues traçables",faibles:"Dépend du web, pas le meilleur créatif ou pur raisonnement.",usages:"Recherche web, veille, fact-checking",code:3.7,raisonnement:4.2,creativite:3.5,fiabilite:4.4,moyenne:3.95,classement:7},
+  {ia:"Grok",evaluateur:"ChatGPT 5.3",popularite:"Proximité avec X, recherche en temps réel, marketing direct",forts:"Réponse en temps réel, recherche web/X, long contexte, multimodaux",faibles:"Qualité dépend des sources et du contexte, interface plus polarisante.",usages:"Veille en temps réel X, actualité chaude, génération multimodale",code:4,raisonnement:4,creativite:4,fiabilite:3.4,moyenne:3.85,classement:9},
+  {ia:"Kimi",evaluateur:"ChatGPT 5.3",popularite:"Gros contexte, fonctions d'agent, code, analyse documentaire",forts:"Long contexte, compréhension de documents, tool calling",faibles:"Ecosystème plus discret, documentation anglophone",usages:"Recherche documentaire lourde, travail agentique, analyse longue",code:4.2,raisonnement:4.1,creativite:3.8,fiabilite:3.6,moyenne:3.925,classement:8},
+
+  {ia:"ChatGPT",evaluateur:"Claude Sonnet 4.6",popularite:"Marketing intensif, application mobile soignée, premier sur le marché",forts:"Multimodalité, mémoire persistante, codage avec interpréteur python intégré",faibles:"Hallucinations sur faits précis, limitations token sur modèle gratuit",usages:"Usage généraliste quotidien, génération d'image",code:4.5,raisonnement:4.5,creativite:4.5,fiabilite:4,moyenne:4.375,classement:2},
+  {ia:"Claude",evaluateur:"Claude Sonnet 4.6",popularite:"Fiabilité et cohérence de réponses longues, grande fenêtre de contexte",forts:"Fenêtre de contexte 200k tokens. Taux d'hallucinations parmi les plus bas, rédaction longue forme",faibles:"Pas de recherche web native, trop prudent sur sujets sensibles",usages:"Analyse de documents longs, rédaction professionnelle, code complexe",code:4.5,raisonnement:4.5,creativite:4.5,fiabilite:4.5,moyenne:4.5,classement:1},
+  {ia:"Gemini",evaluateur:"Claude Sonnet 4.6",popularite:"Intégration native dans Google et son écosystème, milliards d'utilisateurs",forts:"Search avec données récentes, jusqu'à 1M tokens de contexte, Multimodalité avancée",faibles:"Incohérences entre les versions. Moins créatif que GPT-4o",usages:"Recherche d'informations récentes, intégration Google Workspace",code:4,raisonnement:4.5,creativite:4,fiabilite:4,moyenne:4.125,classement:3},
+  {ia:"Meta IA",evaluateur:"Claude Sonnet 4.6",popularite:"Distribution via apps Meta, basé sur Llama 3 open-source",forts:"Disponibilité dans les apps sociales Meta, modèle open-weight",faibles:"Moins performante sur tâches complexes. Fiabilité variable.",usages:"Questions rapides dans les apps Meta, déploiement local via Llama",code:3.5,raisonnement:3.5,creativite:3.5,fiabilite:3.5,moyenne:3.5,classement:8},
+  {ia:"Copilot",evaluateur:"Claude Sonnet 4.6",popularite:"Intégration native dans les outils Microsoft, distribution via Windows 11",forts:"Recherche Web en temps réel avec citation, générer résumé email, rapport Word, Excel",faibles:"Réponses excessivement prudentes, fonctionnalité 365 très coûteuse",usages:"Environnements professionnels Microsoft, automatisations Office",code:4,raisonnement:4,creativite:3.5,fiabilite:3.5,moyenne:3.75,classement:5},
+  {ia:"Le Chat",evaluateur:"Claude Sonnet 4.6",popularite:"Champion européen, modèle open-weight performant très utilisé par les développeurs",forts:"Open-weight parmi les meilleurs, Performance solide en code et langues européennes, RGPD",faibles:"Notoriété grand public limitée, créativité et multimodalité en retrait",usages:"Entreprises européennes soucieuses de leurs données, tâches en français",code:4,raisonnement:3.5,creativite:3.5,fiabilite:3.5,moyenne:3.625,classement:7},
+  {ia:"DeepSeek",evaluateur:"Claude Sonnet 4.6",popularite:"Coût de développement très inférieur à ses concurrents, Open-source et gratuit",forts:"Excelle en mathématique, code et raisonnement logique, coût d'inférence très bas",faibles:"Censure liée à la Chine, préoccupations de confidentialité",usages:"Raisonnement mathématique, code, chercheur avec modèle open-source",code:4.5,raisonnement:4.5,creativite:3.5,fiabilite:3.5,moyenne:4,classement:4},
+  {ia:"Perplexity",evaluateur:"Claude Sonnet 4.6",popularite:"Réponses sourcées et vérifiables, web en temps réel",forts:"Réponses avec sources cliquables, web en temps réel, interface simple et rapide",faibles:"Capacités créatrices très limitées, pas adapté à la génération de code",usages:"Recherche d'informations récentes et vérifiables, veille, fact-checking",code:3,raisonnement:3.5,creativite:3,fiabilite:4,moyenne:3.375,classement:10},
+  {ia:"Grok",evaluateur:"Claude Sonnet 4.6",popularite:"Flux de données en temps réel sur X, ton décalé, sans restrictions habituelles",forts:"Accès flux X en temps réel, performances sur les benchmarks, ton libre",faibles:"Biais liés aux positions d'Elon Musk, fiabilité moindre",usages:"Surveillance écosystème X en temps réel, usage créatif décontracté",code:3.5,raisonnement:4,creativite:4,fiabilite:3.5,moyenne:3.75,classement:5},
+  {ia:"Kimi",evaluateur:"Claude Sonnet 4.6",popularite:"Premier à proposer une grande fenêtre de token, fort en Chine et Asie",forts:"Fenêtre de contexte très longues, analyse de documents volumineux",faibles:"Peu connu hors de l'Asie, interface et écosystème limités, données hébergées en Chine",usages:"Analyse de documents longs, usage bilingue",code:3.5,raisonnement:3.5,creativite:3.5,fiabilite:3.5,moyenne:3.5,classement:8},
+
+  {ia:"ChatGPT",evaluateur:"Gemini 3",popularite:"Réseau massif, mode vocal avancé, raisonnement o1",forts:"Logique pure (maths/physique), polyvalence extrême.",faibles:"Coût élevé du raisonnement, latence en mode réflexion.",usages:"Couteau suisse, recherche scientifique pro.",code:4.8,raisonnement:5,creativite:4.5,fiabilite:4.7,moyenne:4.75,classement:2},
+  {ia:"Claude",evaluateur:"Gemini 3",popularite:"Ton humain, excellence reconnue en programmation.",forts:"Nuance littéraire, codage d'applications complexes.",faibles:"Contexte plus court que Gemini, refus éthiques fréquents.",usages:"Développement logiciel, rédaction haute qualité.",code:4.9,raisonnement:4.7,creativite:4.8,fiabilite:4.6,moyenne:4.75,classement:1},
+  {ia:"Gemini",evaluateur:"Gemini 3",popularite:"Intégration Android et écosystème Google Workspace.",forts:"Contexte immense (2M+ tokens), multimodalité native.",faibles:"Sur-censure de sécurité, hallucinations sur l'actu web.",usages:"Analyse de documents massifs, écosystème Google.",code:4.2,raisonnement:4.3,creativite:4,fiabilite:4.1,moyenne:4.15,classement:5},
+  {ia:"Meta IA",evaluateur:"Gemini 3",popularite:"Gratuit, intégré WhatsApp/IG/FB, Open-Weights.",forts:"Vitesse, accessibilité mondiale, création rapide.",faibles:"Moins performant sur les tâches académiques pointues.",usages:"Usage quotidien rapide, déploiement privé (Llama).",code:4,raisonnement:3.8,creativite:4.2,fiabilite:3.7,moyenne:3.925,classement:7},
+  {ia:"Copilot",evaluateur:"Gemini 3",popularite:"Omniprésence Windows et suite Office 365.",forts:"Intégration métier (Excel vers PPT), productivité.",faibles:"Interface parfois lourde, dépendance totale à Azure.",usages:"Bureautique, productivité en entreprise.",code:4.5,raisonnement:4.5,creativite:3.5,fiabilite:4.3,moyenne:4.2,classement:4},
+  {ia:"Le Chat",evaluateur:"Gemini 3",popularite:"Souveraineté européenne, performance et sobriété.",forts:"Multilinguisme, français parfait, conforme RGPD.",faibles:"Moins de fonctionnalités multimodales.",usages:"Entreprises européennes, confidentialité des données.",code:4.1,raisonnement:4.2,creativite:3.9,fiabilite:4.2,moyenne:4.1,classement:6},
+  {ia:"DeepSeek",evaluateur:"Gemini 3",popularite:"Rapport performance/coût disruptif, tech chinoise.",forts:"Mathématiques et Code de bas niveau.",faibles:"Interface rudimentaire, biais culturels d'origine.",usages:"Développeurs, performance brute à bas coût.",code:5,raisonnement:4.8,creativite:3,fiabilite:4,moyenne:4.2,classement:3},
+  {ia:"Perplexity",evaluateur:"Gemini 3",popularite:"Alternative IA au moteur de recherche Google.",forts:"Citations systématiques, veille web sourcée.",faibles:"Faible en création pure ou code complexe hors-web.",usages:"Recherche d'infos, fact-checking, veille.",code:3.5,raisonnement:4,creativite:3,fiabilite:4.9,moyenne:3.85,classement:8},
+  {ia:"Grok",evaluateur:"Gemini 3",popularite:"Données X (Twitter) temps réel, ton anti-woke.",forts:"Actualité brûlante, analyse de tendances sociales.",faibles:"Ton parfois clivant, moins stable sur l'académique.",usages:"Veille actu, analyse de sentiment social.",code:3.8,raisonnement:3.9,creativite:4.1,fiabilite:3.5,moyenne:3.825,classement:9},
+  {ia:"Kimi",evaluateur:"Gemini 3",popularite:"Pionnier des très longues fenêtres de contexte.",forts:"Analyse de fichiers volumineux (séries de romans).",faibles:"Disponibilité hors-Chine, français perfectible.",usages:"Analyse documentaire massive, recherche académique.",code:3.7,raisonnement:4,creativite:3.5,fiabilite:3.8,moyenne:3.75,classement:10},
+
+  {ia:"ChatGPT",evaluateur:"Meta IA",popularite:"Diffusion massive, interface simple, écosystème large.",forts:"Raisonnement agentique, multimodalité, vitesse.",faibles:"Coût élevé, contexte limité, hallucinations.",usages:"Agent autonome, recherche complexe, tout-en-un.",code:5,raisonnement:4.5,creativite:5,fiabilite:4,moyenne:4.625,classement:2},
+  {ia:"Claude",evaluateur:"Meta IA",popularite:"Focus sécurité, excellence en code (Sonnet/Opus).",forts:"Code, fiabilité (<2% hallu), raisonnement GPQA.",faibles:"Prix élevé, latence modérée, multimodalité vidéo en retrait.",usages:"Code complexe, analyse juridique/médicale, agents longs.",code:5,raisonnement:5,creativite:4,fiabilite:5,moyenne:4.75,classement:1},
+  {ia:"Gemini",evaluateur:"Meta IA",popularite:"Intégration Google Workspace, contexte massif.",forts:"Raisonnement abstrait, multimodalité native, long contexte.",faibles:"Hallucinations élevées, latence, code perfectible.",usages:"Analyse de gros docs, vidéo, recherche académique.",code:4,raisonnement:5,creativite:4.5,fiabilite:3,moyenne:4.125,classement:3},
+  {ia:"Meta IA",evaluateur:"Meta IA",popularite:"Gratuit, intégré aux apps Meta (WhatsApp/FB/IG).",forts:"Santé, science, mode Contemplating, efficacité.",faibles:"Code moyen, pas de sortie image/vidéo, pas d'API.",usages:"Santé, science, usage social gratuit.",code:3,raisonnement:4,creativite:3,fiabilite:4,moyenne:3.5,classement:10},
+  {ia:"Copilot",evaluateur:"Meta IA",popularite:"Intégration M365 (Word/Excel), sécurité entreprise.",forts:"Workflow Office, GitHub Copilot, sécurité.",faibles:"Dépendance Cloud, imprécis sur requêtes complexes.",usages:"Entreprise M365, automatisation bureautique.",code:4,raisonnement:4,creativite:4,fiabilite:3.5,moyenne:3.875,classement:5},
+  {ia:"Le Chat",evaluateur:"Meta IA",popularite:"Souveraineté européenne, conformité RGPD.",forts:"Vitesse (1000 wps), OCR performant, coût bas.",faibles:"Contexte limité, multimodalité en beta.",usages:"Entreprises UE, OCR, besoin de vitesse.",code:3.5,raisonnement:3.5,creativite:4,fiabilite:4,moyenne:3.75,classement:9},
+  {ia:"DeepSeek",evaluateur:"Meta IA",popularite:"Disruptif par le prix, performance brute (V4 Pro).",forts:"Prix imbattable, code (92%), efficacité.",faibles:"Faible en créativité, sécurité, censure.",usages:"Développeurs, startups, API gros volume.",code:5,raisonnement:4,creativite:3,fiabilite:3,moyenne:3.75,classement:7},
+  {ia:"Perplexity",evaluateur:"Meta IA",popularite:"Moteur de recherche IA, réponse-first.",forts:"Sources citées, mode Deep Research, multi-modèles.",faibles:"Dépendance modèles tiers, faible en création pure.",usages:"Veille, recherche sourcée, fact-checking.",code:3.5,raisonnement:4,creativite:3,fiabilite:5,moyenne:3.875,classement:6},
+  {ia:"Grok",evaluateur:"Meta IA",popularite:"Accès temps réel données X, ton sans filtre.",forts:"Maths (AIME), temps réel X, raisonnement.",faibles:"Biais social, coût d'accès, moins stable en écriture.",usages:"Veille temps réel, tendances, mathématiques.",code:4,raisonnement:4.5,creativite:3.5,fiabilite:3,moyenne:3.75,classement:8},
+  {ia:"Kimi",evaluateur:"Meta IA",popularite:"Long contexte (256K), MoE performant (K2.6).",forts:"Code, maths (AIME), agent avec tools.",faibles:"Vision en retrait, cutoff 2025, écosystème étroit.",usages:"Analyse de fichiers, code, maths, agents.",code:4.5,raisonnement:4.5,creativite:3.5,fiabilite:4,moyenne:4.125,classement:4},
+
+  {ia:"ChatGPT",evaluateur:"Copilot",popularite:"Pionnier, forte notoriété, écosystème mature.",forts:"Polyvalence, code performant, raisonnement o1, multimodalité.",faibles:"Hallucinations, sources parfois inventées, restrictions de contenu.",usages:"Assistant généraliste, dev, pédagogie.",code:4.5,raisonnement:4.5,creativite:4.5,fiabilite:4,moyenne:4.375,classement:1},
+  {ia:"Claude",evaluateur:"Copilot",popularite:"Focus sécurité et éthique, haute qualité rédactionnelle.",forts:"Raisonnement structuré, code documenté, respect consignes.",faibles:"Pas de génération image, disponibilité géo limitée.",usages:"Analyse complexe, rédaction sérieuse, secteurs régulés",code:4,raisonnement:4.5,creativite:4,fiabilite:4.5,moyenne:4.25,classement:2},
+  {ia:"Gemini",evaluateur:"Copilot",popularite:"Intégration Google Workspace, multimodalité native.",forts:"Contexte très long, analyse documents, productivité Google.",faibles:"Qualité inégale, hallucinations confiantes.",usages:"Utilisateurs Google, analyse gros docs, multimédia.",code:4,raisonnement:4,creativite:4,fiabilite:3.5,moyenne:3.875,classement:4},
+  {ia:"Meta IA",evaluateur:"Copilot",popularite:"Distribution massive (WhatsApp/FB), standard open-weight Llama.",forts:"Modèles ouverts, bon niveau général, gratuité.",faibles:"Bridé, moins performant sur tâches très complexes.",usages:"Casual chat, projets open-source, prototypage.",code:3.5,raisonnement:3.5,creativite:4,fiabilite:3.5,moyenne:3.625,classement:9},
+  {ia:"Copilot",evaluateur:"Copilot",popularite:"Intégration Microsoft 365, standard entreprise.",forts:"Productivité bureautique, GitHub Copilot, sécurité B2B.",faibles:"Dépendance écosystème MS, coût licence.",usages:"Entreprises sous MS 365, développeurs",code:4.5,raisonnement:4,creativite:4,fiabilite:4,moyenne:4.125,classement:3},
+  {ia:"Le Chat",evaluateur:"Copilot",popularite:"Souveraineté européenne, acteur français Mistral AI.",forts:"Français natif excellent, code concis, open-weight.",faibles:"Moins d'outils intégrés, écosystème plus jeune.",usages:"Entreprises UE, conformité RGPD, dev francophones.",code:4,raisonnement:4,creativite:4,fiabilite:3.5,moyenne:3.875,classement:6},
+  {ia:"DeepSeek",evaluateur:"Copilot",popularite:"Spécialisation raisonnement, coût agressif.",forts:"Mathématiques, logique, rapport performance/coût.",faibles:"UX/Docs moins polies, moins de ressources FR/EN.",usages:"Problèmes complexes, recherche technique.",code:4,raisonnement:4.5,creativite:3.5,fiabilite:3.5,moyenne:3.875,classement:5},
+  {ia:"Perplexity",evaluateur:"Copilot",popularite:"Moteur de réponse avec sources temps réel.",forts:"Fiabilité via citations, veille documentaire efficace.",faibles:"Dépendance qualité web, moins créatif/code long.",usages:"Recherche info, veille stratégique, journalisme.",code:3.5,raisonnement:4,creativite:3.5,fiabilite:4,moyenne:3.75,classement:7},
+  {ia:"Grok",evaluateur:"Copilot",popularite:"Accès données temps réel X, ton cash.",forts:"Actualité/tendances X, moins filtré.",faibles:"Fiabilité des infos X, peu de fonctions productivité.",usages:"Culture internet, actualité temps réel.",code:3.5,raisonnement:3.5,creativite:4,fiabilite:3,moyenne:3.5,classement:10},
+  {ia:"Kimi",evaluateur:"Copilot",popularite:"Leader marché chinois, contexte long.",forts:"Maîtrise chinois, analyse documents volumineux.",faibles:"Peu optimisé FR/EN, accessibilité géo limitée.",usages:"Utilisateurs sinophones, analyse docs chinois.",code:3.5,raisonnement:4,creativite:4,fiabilite:3.5,moyenne:3.75,classement:8},
+
+  {ia:"ChatGPT",evaluateur:"Le Chat",popularite:"Leader historique, écosystème étendu, adoption massive.",forts:"Code (Codex), raisonnement mode Thinking, multimodalité (Sora, DALL-E 3).",faibles:"Coût élevé des plans Pro, hallucinations persistantes sur sujets niche.",usages:"Développement logiciel, création de contenu, recherche avec sources.",code:5,raisonnement:5,creativite:5,fiabilite:4,moyenne:4.75,classement:2},
+  {ia:"Claude",evaluateur:"Le Chat",popularite:"Excellence technique (PhD-level), focus sécurité éthique, adoption entreprise.",forts:"Meilleur en raisonnement/code (Claude Code), multi-agents, moins d'hallucinations.",faibles:"Coût très élevé (Mythos), pas de vidéo native, mode Thinking lent.",usages:"Analyse financière/juridique, R&D, automatisation multi-agents.",code:5,raisonnement:5,creativite:4.5,fiabilite:5,moyenne:4.875,classement:1},
+  {ia:"Gemini",evaluateur:"Le Chat",popularite:"Intégration Google Search/Workspace/Android.",forts:"Raisonnement long (Deep Think), multimodalité native (Veo), accès temps réel.",faibles:"Hallucinations factuelles, latence en mode Deep Think.",usages:"Recherche technique, analyse multimodale, automatisation Workspace.",code:4.5,raisonnement:5,creativite:4.5,fiabilite:4,moyenne:4.5,classement:3},
+  {ia:"Meta IA",evaluateur:"Le Chat",popularite:"Intégration native réseaux sociaux (WhatsApp/IG), standard open-weight (Llama 4).",forts:"Gratuit pour les utilisateurs Meta, vitesse (faible latence), compréhension images.",faibles:"Pas d'API publique, historique de sécurité (fuites), moins bon sur le factuel.",usages:"Usage grand public, développement open-source, analyse d'images.",code:4,raisonnement:4.5,creativite:4,fiabilite:3.5,moyenne:4,classement:10},
+  {ia:"Copilot",evaluateur:"Le Chat",popularite:"Standard B2B (Fortune 500), intégration native suite Microsoft 365.",forts:"Productivité bureautique (Office), Web grounding (Bing), conformité entreprise.",faibles:"Abonnement Enterprise cher, rigide (écosystème MS), créativité limitée.",usages:"Bureautique avancée, collaboration d'équipe (Teams).",code:4,raisonnement:4,creativite:3.5,fiabilite:4.5,moyenne:4,classement:8},
+  {ia:"Le Chat",evaluateur:"Le Chat",popularite:"Souveraineté européenne, hébergement local (RGPD), performance/prix compétitif.",forts:"Code (79% SWE-bench), Work Mode, transcription audio ultra-rapide.",usages:"Analyse de documents longs, développement, transcription audio.",faibles:"Moins d'intégrations tierces, hallucinations sur requêtes factuelles.",code:4.5,raisonnement:4,creativite:4,fiabilite:4,moyenne:4.125,classement:7},
+  {ia:"DeepSeek",evaluateur:"Le Chat",popularite:"Rapport performance/prix imbattable, architecture MoE innovante.",forts:"Code (81% SWE-bench), contexte 1M tokens, coût infime ($0.30/M tokens).",faibles:"API limitée, documentation moins mature, écosystème encore restreint.",usages:"Développement logiciel budget limité, analyse de codebases massives.",code:5,raisonnement:4.5,creativite:3.5,fiabilite:4,moyenne:4.25,classement:5},
+  {ia:"Perplexity",evaluateur:"Le Chat",popularite:"Référence pour la recherche web citée, adoption massive.",forts:"Sources vérifiables, Deep Research, Computer (agent autonome).",faibles:"Abonnement Max cher, moins performant en code pur et création.",usages:"Recherche documentaire approfondie, automatisation de tâches, veille.",code:3.5,raisonnement:5,creativite:3.5,fiabilite:5,moyenne:4.25,classement:6},
+  {ia:"Grok",evaluateur:"Le Chat",popularite:"Accès temps réel données X (Twitter), vision Elon Musk, contexte géant.",forts:"Contexte 2M tokens, multi-agents (16), latence faible, Grok Imagine.",faibles:"Instabilité du service, critiques sur les deepfakes, abonnement Heavy cher.",usages:"Veille actualité en direct, analyse de documents très longs.",code:4.5,raisonnement:4.5,creativite:4,fiabilite:3,moyenne:4,classement:9},
+  {ia:"Kimi",evaluateur:"Le Chat",popularite:"Performance open-source de pointe (Moonshot AI), Agent Swarm (300 agents).",forts:"Code (SWE-bench Pro), Agent Swarm pour workflows massifs.",faibles:"Documentation émergente, API limitée, hallucinations factuelles.",usages:"Développement logiciel, automatisation de workflows complexes.",code:5,raisonnement:4.5,creativite:4,fiabilite:4,moyenne:4.375,classement:4},
+
+  {ia:"ChatGPT",evaluateur:"DeepSeek",popularite:"Pionnier leader (72.3% part de marché). Couteau suisse polyvalent.",forts:"Capacités agentiques (GPT-5.4), multimodalité texte/voix/vidéo.",faibles:"Style parfois scolaire, hallucinations sur sujets pointus.",usages:"Tâches générales, analyse de données, usage quotidien.",code:4.5,raisonnement:4.5,creativite:4,fiabilite:4,moyenne:4.25,classement:2},
+  {ia:"Claude",evaluateur:"DeepSeek",popularite:"Référence pour la rédaction de qualité et la sécurité.",forts:"Contexte immense (200k+), rédaction nuancée, Adaptive Thinking.",faibles:"Pas de génération d'images, peu d'intégrations bureautiques.",usages:"Rapports longs, analyse juridique, revue de code complexe.",code:5,raisonnement:5,creativite:4.5,fiabilite:4.5,moyenne:4.75,classement:1},
+  {ia:"Gemini",evaluateur:"DeepSeek",popularite:"Forte croissance (13.7%). Intégration native Google Workspace.",forts:"Multimodalité native, recherche temps réel (Deep Research).",faibles:"Moins créatif que Claude, dépendance écosystème Google.",usages:"Utilisateurs Workspace, recherche web sourcée, analyse vidéo.",code:4,raisonnement:4,creativite:3.5,fiabilite:4,moyenne:3.875,classement:6},
+  {ia:"Meta IA",evaluateur:"DeepSeek",popularite:"Accessible partout (WhatsApp/Instagram). Base Llama open source.",forts:"Gratuité totale, intégration apps sociales, modèles ouverts.",faibles:"Décroché sur le raisonnement complexe, pas de web temps réel.",usages:"Usage occasionnel grand public, dév. local (Llama 3).",code:3,raisonnement:2.5,creativite:3,fiabilite:2.5,moyenne:2.75,classement:10},
+  {ia:"Copilot",evaluateur:"DeepSeek",popularite:"Standard en entreprise via Microsoft 365 et GitHub.",forts:"Intégration Office (Excel/Teams), Cross-App Reasoning.",faibles:"Coût élevé (30$/mois), style très conservateur/corporate.",usages:"Productivité bureautique, développeurs écosystème .NET.",code:4.5,raisonnement:3.5,creativite:3,fiabilite:4,moyenne:3.75,classement:7},
+  {ia:"Le Chat",evaluateur:"DeepSeek",popularite:"Souveraineté européenne (Mistral AI), conforme RGPD.",forts:"Hébergement France, déploiement on-premise, efficacité agents.",faibles:"Moins d'empathie émotionnelle, interface moins intuitive.",usages:"Banques, assurances, institutions (besoin sécurité RGPD).",code:4,raisonnement:4,creativite:3.5,fiabilite:4.5,moyenne:4,classement:5},
+  {ia:"DeepSeek",evaluateur:"DeepSeek",popularite:"Roi du rapport performance/prix en 2026. Open source.",forts:"Excellence code/maths, raisonnement transparent (R1), prix bas.",faibles:"Confidentialité (Chine), censure potentielle, écosystème limité.",usages:"Développeurs, calculs techniques, API à bas coût.",code:5,raisonnement:4.5,creativite:3.5,fiabilite:3,moyenne:4,classement:3},
+  {ia:"Perplexity",evaluateur:"DeepSeek",popularite:"Le moteur de réponse factuelle avec citations en temps réel.",forts:"Citations systématiques, Model Council (multi-LLM), web search.",faibles:"Faible en créativité pure, dépendance aux sources web.",usages:"Recherche de marché, veille, journalisme, vérification.",code:3.5,raisonnement:3.5,creativite:2.5,fiabilite:5,moyenne:3.625,classement:8},
+  {ia:"Grok",evaluateur:"DeepSeek",popularite:"Assistant de X (Twitter), ton naturel et anti-woke.",forts:"Accès direct flux X, contexte géant (2M tokens), humour.",faibles:"Manque de maturité pro, biais idéologique possible.",usages:"Veille réseaux sociaux, actualités direct, ton décalé.",code:3.5,raisonnement:3.5,creativite:4,fiabilite:3,moyenne:3.5,classement:9},
+  {ia:"Kimi",evaluateur:"DeepSeek",popularite:"Champion du benchmark GPQA à prix cassé (Moonshot AI).",forts:"Ratio performance/prix imbattable, raisonnement logique pur.",faibles:"Notoriété faible en Occident, mêmes risques que DeepSeek.",usages:"Optimisation coûts API, raisonnement technique, dév.",code:4.5,raisonnement:4.5,creativite:null,fiabilite:3,moyenne:4,classement:4},
+
+  {ia:"ChatGPT",evaluateur:"Perplexity",popularite:"Adoption massive, interface simple, premier entrant.",forts:"Raisonnement, rédaction, code, support multimodal, polyvalence.",faibles:"Hallucinations, fiabilité variable, options premium payantes.",usages:"Assistant polyvalent, études, rédaction, brainstorming.",code:4.5,raisonnement:4.5,creativite:4.5,fiabilite:4,moyenne:4.375,classement:1},
+  {ia:"Claude",evaluateur:"Perplexity",popularite:"Réputation pour l'écriture et l'analyse, forte adoption en entreprise.",forts:"Rédaction longue, synthèse, analyse de documents complexes, clarté.",faibles:"Moins de recherche web native, peut être conservateur.",usages:"Rédaction, analyse de documents, travail intellectuel structuré.",code:4,raisonnement:4.5,creativite:4,fiabilite:4.5,moyenne:4.25,classement:2},
+  {ia:"Gemini",evaluateur:"Perplexity",popularite:"Intégration écosystème Google, visibilité marketing.",forts:"Multimodalité, raisonnement compétitif, recherche d'information.",faibles:"Résultats variables selon la version, erreurs factuelles.",usages:"Recherche assistée, productivité, utilisateurs Google.",code:4,raisonnement:4.5,creativite:4,fiabilite:4,moyenne:4.125,classement:3},
+  {ia:"Meta IA",evaluateur:"Perplexity",popularite:"Diffusion massive via Facebook, Instagram, WhatsApp.",forts:"Intégration apps grand public, conversationnel rapide.",faibles:"Performances moins homogènes, licence nuancée.",usages:"Usage grand public, exploration rapide.",code:3.5,raisonnement:3.5,creativite:3.5,fiabilite:3.5,moyenne:3.5,classement:10},
+  {ia:"Copilot",evaluateur:"Perplexity",popularite:"Intégration native Windows et Microsoft 365.",forts:"Productivité bureautique, workflow d'entreprise.",faibles:"Moins universel, dépend de l'environnement Microsoft.",usages:"Bureautique, Teams, Outlook, Excel.",code:3.5,raisonnement:4,creativite:3.5,fiabilite:4,moyenne:3.75,classement:7},
+  {ia:"Le Chat",evaluateur:"Perplexity",popularite:"Image européenne, confidentialité, proximité francophone.",forts:"Qualité en français, rapidité, performance compacte.",faibles:"Moins dominant mondialement, écosystème produit plus petit.",usages:"Français, besoins de confidentialité, souveraineté.",code:4,raisonnement:4,creativite:4,fiabilite:3.8,moyenne:3.95,classement:6},
+  {ia:"DeepSeek",evaluateur:"Perplexity",popularite:"Fort impact communautaire, performance à coût réduit.",forts:"Rapport performance/coût, excellence en code et raisonnement technique.",faibles:"Transparence limitée, fiabilité factuelle variable.",usages:"Développeurs, auto-hébergement, expérimentation technique.",code:4.5,raisonnement:4.5,creativite:3.5,fiabilite:3.8,moyenne:4.075,classement:4},
+  {ia:"Perplexity",evaluateur:"Perplexity",popularite:"Promesse de réponses rapides avec citations consultables.",forts:"Recherche web intégrée, citations visibles, traçabilité des sources.",faibles:"Dépend de la qualité du web, moins créatif.",usages:"Recherche documentaire, fact-checking, préparation de notes.",code:3,raisonnement:3.5,creativite:3,fiabilite:4.5,moyenne:3.5,classement:9},
+  {ia:"Grok",evaluateur:"Perplexity",popularite:"Visibilité via l'écosystème X (Musk), image produit libre.",forts:"Ton conversationnel, actualité en direct sur X, personnalité unique.",faibles:"Disponibilité changeante, fiabilité à vérifier.",usages:"Suivi actualité sur X, ton direct.",code:3.5,raisonnement:4,creativite:4,fiabilite:3.5,moyenne:3.75,classement:8},
+  {ia:"Kimi",evaluateur:"Perplexity",popularite:"Forte présence en Chine, connu pour sa gestion de contextes massifs.",forts:"Grand contexte (documents longs), très bon en code, usages agentiques.",faibles:"Moins visible hors Chine, documentation moins familière en français.",usages:"Analyse de longs documents, code, expérimentations avancées.",code:4.5,raisonnement:4,creativite:3.5,fiabilite:3.8,moyenne:3.95,classement:5},
+
+  {ia:"ChatGPT",evaluateur:"Grok",popularite:"Écosystème (Custom GPTs, Canvas) et adoption massive.",forts:"Raisonnement complexe, Multi-étapes, Vision.",faibles:"Hallucinations, Coût élevé, Refus safety.",usages:"Productivité générale, Workflows perso.",code:4.4,raisonnement:4.6,creativite:4.5,fiabilite:4.2,moyenne:4.425,classement:2},
+  {ia:"Claude",evaluateur:"Grok",popularite:"Excellence coding (Cursor) et écriture naturelle.",forts:"Fiabilité, Analyse de fichiers longs, Éthique.",faibles:"Moins créatif, Restrictions éthiques fortes.",usages:"Développement logiciel, Rédaction pro.",code:4.7,raisonnement:4.5,creativite:4.6,fiabilite:4.7,moyenne:4.625,classement:1},
+  {ia:"Gemini",evaluateur:"Grok",popularite:"Intégration Workspace et multimodalité native (vidéo).",forts:"Planification long-horizon, Analyse Drive/Gmail.",faibles:"Style verbeux, Moins performant en coding.",usages:"Recherche scientifique, Analyse de données.",code:4.1,raisonnement:4.8,creativite:4.3,fiabilite:4.4,moyenne:4.4,classement:3},
+  {ia:"Meta IA",evaluateur:"Grok",popularite:"Accès gratuit, Open-weight, Intégration réseaux sociaux.",forts:"Efficacité (MoE), Personnalisation aisée.",faibles:"Moins performant sur les benchmarks frontier.",usages:"Déploiement open-source, Usage social.",code:4,raisonnement:4.1,creativite:4.2,fiabilite:4,moyenne:4.075,classement:9},
+  {ia:"Copilot",evaluateur:"Grok",popularite:"Intégration profonde Office 365, Teams et Windows.",forts:"Productivité bureautique, Confidentialité entreprise.",faibles:"Moins flexible pour les tâches créatives.",usages:"Environnement Microsoft, Bureautique.",code:4.2,raisonnement:4.3,creativite:4.1,fiabilite:4.4,moyenne:4.25,classement:7},
+  {ia:"Le Chat",evaluateur:"Grok",popularite:"Vitesse d'exécution, Souveraineté européenne et GDPR.",forts:"Inférence rapide, Multilingue, Structuration.",faibles:"Moins puissant sur les tâches très complexes.",usages:"Usage européen, Self-hosting, Rapidité.",code:4.1,raisonnement:4.2,creativite:4.1,fiabilite:4.2,moyenne:4.15,classement:8},
+  {ia:"DeepSeek",evaluateur:"Grok",popularite:"Rapport performance/prix, Excellence coding/math.",forts:"Efficacité algorithmique, Raisonnement technique.",faibles:"Multimodalité limitée, Données parfois datées.",usages:"Coding algorithmique, Usage gros volume.",code:4.6,raisonnement:4.4,creativite:4,fiabilite:4.1,moyenne:4.275,classement:6},
+  {ia:"Perplexity",evaluateur:"Grok",popularite:"Recherche web en temps réel avec sources citées.",forts:"Informations actuelles, Vitesse de recherche.",faibles:"Faible en raisonnement profond et création.",usages:"Veille technologique, Recherche factuelle.",code:3.5,raisonnement:4,creativite:3.8,fiabilite:4.3,moyenne:3.9,classement:10},
+  {ia:"Grok",evaluateur:"Grok",popularite:"Données X (Twitter) en temps réel, Style direct.",forts:"Analyse tendances, STEM/Math, Agentic.",faibles:"Écosystème moins mature, Variabilité perf.",usages:"Analyse réseaux sociaux, Coding STEM.",code:4.5,raisonnement:4.4,creativite:4.4,fiabilite:4.2,moyenne:4.375,classement:5},
+  {ia:"Kimi",evaluateur:"Grok",popularite:"Performance open-weight élite et Swarm d'agents.",forts:"Coding long-horizon, Agents autonomes (300+).",faibles:"Écosystème technique, Accès global limité.",usages:"Projets complexes, Agents autonomes.",code:4.7,raisonnement:4.5,creativite:4.2,fiabilite:4.3,moyenne:4.425,classement:4},
+
+  {ia:"ChatGPT",evaluateur:"Kimi",popularite:"400M+ actifs / Écosystème mature",forts:"Coding agentique (82.7%), Multimodalité, Canvas",faibles:"Coût API élevé, Contexte limité (400K)",usages:"Dev. complexe, Analyse de données",code:4.5,raisonnement:4.5,creativite:4.5,fiabilite:4,moyenne:4.375,classement:2},
+  {ia:"Claude",evaluateur:"Kimi",popularite:"Référence dev. (Cursor/Claude Code)",forts:"Qualité écriture, Output 128K, Coding réel",faibles:"Coût élevé, Pas de web search natif",usages:"Rédaction pro, Architecture logicielle",code:5,raisonnement:4.5,creativite:5,fiabilite:4.5,moyenne:4.75,classement:1},
+  {ia:"Gemini",evaluateur:"Kimi",popularite:"Leader Arena Q2 2026 / Intégration Google",forts:"Raisonnement scientifique (94.3%), Contexte 1M",faibles:"Verbosité (+20-30%), Adoption dev. moyenne",usages:"Recherche, Analyse docs longs",code:4,raisonnement:5,creativite:4,fiabilite:4.5,moyenne:4.375,classement:3},
+  {ia:"Meta IA",evaluateur:"Kimi",popularite:"Leader Open-weight / Cloud souverain",forts:"Contexte 10M (Scout), Self-hosting, Gratuit",faibles:"Derrière les modèles fermés, Licence restrictive",usages:"Souveraineté, RAG sur docs massifs",code:3.5,raisonnement:3.5,creativite:3.5,fiabilite:3.5,moyenne:3.5,classement:9},
+  {ia:"Copilot",evaluateur:"Kimi",popularite:"7% part de marché / Standard Office",forts:"Intégration Microsoft 365, Sécurité Enterprise",faibles:"Lock-in écosystème, Performance pure < leaders",usages:"Productivité bureautique, Teams",code:3.5,raisonnement:3.5,creativite:3.5,fiabilite:4,moyenne:3.625,classement:7},
+  {ia:"Le Chat",evaluateur:"Kimi",popularite:"Champion européen / Souveraineté",forts:"Coding compétitif (77.6%), Vibe agents, RGPD",faibles:"Moins d'intégrations, Contexte (256K)",usages:"Projets européens, Coding asynchrone",code:4,raisonnement:3.5,creativite:3.5,fiabilite:3.5,moyenne:3.625,classement:7},
+  {ia:"DeepSeek",evaluateur:"Kimi",popularite:"Prix 7x moins cher / Adoption massive",forts:"Coding compétitif (Codeforces), Architecture MoE",faibles:"Hallucinations graves (94%), Souveraineté",usages:"Prototypage rapide, Scale à bas coût",code:4.5,raisonnement:3.5,creativite:3,fiabilite:2.5,moyenne:3.375,classement:5},
+  {ia:"Perplexity",evaluateur:"Kimi",popularite:"Google killer / 45M utilisateurs",forts:"Citations sources, Deep Research, Pas de pub",faibles:"Dépendance modèles tiers, Pas de coding",usages:"Recherche factuelle, Veille, Études",code:2.5,raisonnement:4,creativite:2.5,fiabilite:4.5,moyenne:3.375,classement:5},
+  {ia:"Grok",evaluateur:"Kimi",popularite:"Temps réel X / Communauté Tech",forts:"Vitesse (1200 t/s), Maths (AIME 95%), HLE",faibles:"Hallucinations (20.2%), Écosystème limité",usages:"Analyse live Twitter/X, Mathématiques",code:3.5,raisonnement:4.5,creativite:3.5,fiabilite:2.5,moyenne:3.5,classement:9},
+  {ia:"Kimi",evaluateur:"Kimi",popularite:"Leader Asie / Efficacité agentique",forts:"DeepSearch (92.5%), Rapport qualité/prix",faibles:"Visibilité Occident, Moins d'intégrations",usages:"Agents autonomes, Recherche Asie",code:4.5,raisonnement:4,creativite:3.5,fiabilite:3.5,moyenne:3.875,classement:4}
+];
+
+const IA_LIST = ["ChatGPT","Claude","Gemini","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+const IA_COLORS = {
+  "ChatGPT":"#10a37f","Claude":"#7c6dfa","Gemini":"#4285f4","Meta IA":"#0099ff",
+  "Copilot":"#0078d4","Le Chat":"#ff7000","DeepSeek":"#4d6bff","Perplexity":"#20b2aa",
+  "Grok":"#e7e7e7","Kimi":"#ff6b6b"
+};
+
+function avg(arr){ const v=arr.filter(x=>x!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:0; }
+function round2(n){ return Math.round(n*100)/100; }
+
+function getAggregate(){
+  return IA_LIST.map(ia=>{
+    const rows = RAW.filter(r=>r.ia===ia);
+    return {
+      ia,
+      code: round2(avg(rows.map(r=>r.code))),
+      raisonnement: round2(avg(rows.map(r=>r.raisonnement))),
+      creativite: round2(avg(rows.map(r=>r.creativite))),
+      fiabilite: round2(avg(rows.map(r=>r.fiabilite))),
+      moyenne: round2(avg(rows.map(r=>r.moyenne))),
+      classement_moy: round2(avg(rows.map(r=>r.classement)))
+    };
+  }).sort((a,b)=>b.moyenne-a.moyenne);
+}
+
+function getColorForScore(s){ if(s>=4.5)return"#4fd1a5"; if(s>=4)return"#f5a623"; return"#e84d7a"; }
+function getClass(s){ if(s>=4.5)return"high"; if(s>=4)return"mid"; return"low"; }
+
+function starsHTML(score,color){
+  let h='<div class="stars">';
+  const full=Math.round(score);
+  for(let i=0;i<5;i++) h+=`<div class="star${i<full?' filled':''}"></div>`;
+  return h+'</div>';
+}
+
+// ── OVERVIEW CARDS
+function buildOverviewCards(){
+  const agg=getAggregate();
+  const el=document.getElementById('overview-cards');
+  el.innerHTML=agg.map((d,i)=>{
+    const c=IA_COLORS[d.ia]||'#7c6dfa';
+    return `<div class="ia-card" style="--accent-color:${c}" onclick="showSection('fiches');showFiche('${d.ia}')">
+      <div class="ia-card-head">
+        <div class="ia-name">${d.ia}</div>
+        <div class="ia-rank">#${i+1}</div>
+      </div>
+      <div class="ia-score-big" style="color:${c}">${d.moyenne.toFixed(2)}</div>
+      <div class="ia-score-lbl">Score moyen global</div>
+      ${starsHTML(d.moyenne,c)}
+      <div class="criteria-row" style="margin-top:8px">
+        <div class="crit-badge">Code <span>${d.code}</span></div>
+        <div class="crit-badge">Raison. <span>${d.raisonnement}</span></div>
+        <div class="crit-badge">Créa. <span>${d.creativite}</span></div>
+        <div class="crit-badge">Fiab. <span>${d.fiabilite}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── PODIUM
+function buildPodium(){
+  const agg=getAggregate();
+  const medals=['🥇','🥈','🥉'];
+  const order=[1,0,2];
+  const el=document.getElementById('podium');
+  const classes=['p2','p1','p3'];
+  el.innerHTML=order.map((idx,pos)=>{
+    const d=agg[idx];
+    const c=IA_COLORS[d.ia]||'#7c6dfa';
+    return `<div class="podium-card ${classes[pos]}">
+      <span class="podium-medal">${medals[idx]}</span>
+      <div class="podium-ia" style="color:${c}">${d.ia}</div>
+      <div class="podium-score">${d.moyenne.toFixed(2)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Score moyen</div>
+    </div>`;
+  }).join('');
+}
+
+// ── RANKING TABLES
+function buildRankingTable(tableId, field){
+  const agg=getAggregate();
+  let sorted;
+  if(field==='moyenne') sorted=[...agg].sort((a,b)=>b.moyenne-a.moyenne);
+  else if(field==='classement_moy') sorted=[...agg].sort((a,b)=>a.classement_moy-b.classement_moy);
+  else sorted=[...agg].sort((a,b)=>b[field]-a[field]);
+
+  const el=document.getElementById(tableId);
+  el.innerHTML=`<thead><tr>
+    <th>#</th><th>IA</th><th>Score ${field}</th><th>Barre</th>
+    <th>Code</th><th>Raisonnement</th><th>Créativité</th><th>Fiabilité</th>
+  </tr></thead><tbody>${sorted.map((d,i)=>{
+    const s=field==='classement_moy'?d.classement_moy:d[field]||d.moyenne;
+    const maxS=5;
+    const pct=Math.round((s/maxS)*100);
+    const c=IA_COLORS[d.ia]||'#7c6dfa';
+    return `<tr>
+      <td><span class="rank-num${i<3?' top3':''}">${i+1}</span></td>
+      <td style="font-weight:500;color:${c}">${d.ia}</td>
+      <td><span class="${getClass(s)}" style="font-family:'Syne',sans-serif;font-weight:700">${s.toFixed(2)}</span></td>
+      <td><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${c}"></div></div></td>
+      <td class="${getClass(d.code)}">${d.code}</td>
+      <td class="${getClass(d.raisonnement)}">${d.raisonnement}</td>
+      <td class="${getClass(d.creativite)}">${d.creativite}</td>
+      <td class="${getClass(d.fiabilite)}">${d.fiabilite}</td>
+    </tr>`;
+  }).join('')}</tbody>`;
+}
+
+// ── FICHES
+function buildFiches(){
+  const nav=document.getElementById('fiche-nav');
+  const cont=document.getElementById('fiche-contents');
+  nav.innerHTML=IA_LIST.map(ia=>`<div class="fiche-btn" onclick="showFiche('${ia}')" id="btn-${ia.replace(' ','-')}">${ia}</div>`).join('');
+  cont.innerHTML=IA_LIST.map(ia=>{
+    const rows=RAW.filter(r=>r.ia===ia);
+    const code=round2(avg(rows.map(r=>r.code)));
+    const rais=round2(avg(rows.map(r=>r.raisonnement)));
+    const crea=round2(avg(rows.map(r=>r.creativite)));
+    const fiab=round2(avg(rows.map(r=>r.fiabilite)));
+    const moy=round2(avg(rows.map(r=>r.moyenne)));
+    const c=IA_COLORS[ia]||'#7c6dfa';
+    const initials=ia.substring(0,2).toUpperCase();
+
+    const evalRows=rows.map(r=>`<li class="eval-item">
+      <span class="eval-by">par ${r.evaluateur}</span>
+      <span class="eval-score" style="color:${r.moyenne>=4.5?'#4fd1a5':r.moyenne>=4?'#f5a623':'#e84d7a'}">${r.moyenne.toFixed(2)} <span style="color:var(--muted);font-size:11px">#${r.classement}</span></span>
+    </li>`).join('');
+
+    const evalMapping={"ChatGPT":"ChatGPT 5.3","Claude":"Claude Sonnet 4.6","Gemini":"Gemini 3","Meta IA":"Meta IA","Copilot":"Copilot","Le Chat":"Le Chat","DeepSeek":"DeepSeek","Perplexity":"Perplexity","Grok":"Grok","Kimi":"Kimi"};
+    const asEvaluator=RAW.filter(r=>r.evaluateur===evalMapping[ia]).sort((a,b)=>a.classement-b.classement);
+
+    const forts=rows[0]?.forts||'';
+    const faibles=rows[0]?.faibles||'';
+    const usages=rows[0]?.usages||'';
+    const popularite=rows[0]?.popularite||'';
+
+    const crit=[
+      {lbl:'Code',val:code,color:'#7c6dfa'},
+      {lbl:'Raisonnement',val:rais,color:'#4fd1a5'},
+      {lbl:'Créativité',val:crea,color:'#f5a623'},
+      {lbl:'Fiabilité',val:fiab,color:'#e84d7a'}
+    ];
+
+    return `<div class="fiche-content" id="fiche-${ia.replace(' ','-')}">
+      <div class="fiche-main">
+        <div class="fiche-head">
+          <div class="fiche-avatar" style="background:${c}22;color:${c}">${initials}</div>
+          <div class="fiche-title">
+            <h2 style="color:${c}">${ia}</h2>
+            <div class="sub">Score moyen : <strong style="color:${c}">${moy.toFixed(2)}/5</strong> · ${rows.length} évaluations</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h4>📈 Popularité</h4>
+        <p>${popularite}</p>
+      </div>
+      <div class="info-card">
+        <h4>✅ Points forts</h4>
+        <p>${forts}</p>
+      </div>
+      <div class="info-card">
+        <h4>⚠️ Points faibles</h4>
+        <p>${faibles}</p>
+      </div>
+      <div class="info-card">
+        <h4>🎯 Cas d'usage</h4>
+        <p>${usages}</p>
+      </div>
+
+      <div class="info-card">
+        <h4>Scores par critère</h4>
+        <div class="criteria-grid">
+          ${crit.map(cr=>`<div class="crit-item">
+            <div class="crit-name">${cr.lbl}</div>
+            <div class="crit-val" style="color:${cr.color}">${cr.val}</div>
+            <div class="bar-full"><div class="bar-fill" style="width:${Math.round(cr.val/5*100)}%;background:${cr.color}"></div></div>
+          </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h4>🏆 Son classement personnel (en tant qu'évaluateur)</h4>
+        ${asEvaluator.length>0?`<ul class="evaluations-list">${asEvaluator.map(r=>{
+          const rankColor=r.classement<=3?'#4fd1a5':r.classement<=6?'#f5a623':'#e84d7a';
+          return `<li class="eval-item">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:${rankColor};min-width:28px">#${r.classement}</span>
+              <span style="color:var(--text);font-weight:500">${r.ia}</span>
+            </span>
+            <span style="color:var(--muted);font-size:12px">${r.moyenne.toFixed(2)}/5</span>
+          </li>`;
+        }).join('')}</ul>`:`<p style="color:var(--muted);font-size:13px">Aucune évaluation enregistrée pour cet évaluateur.</p>`}
+      </div>
+
+      <div class="info-card">
+        <h4>Scores reçus par évaluateur</h4>
+        <ul class="evaluations-list">${evalRows}</ul>
+      </div>
+    </div>`;
+  }).join('');
+
+  showFiche('Claude');
+}
+
+function showFiche(ia){
+  document.querySelectorAll('.fiche-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.fiche-btn').forEach(el=>el.classList.remove('active'));
+  const key=ia.replace(' ','-');
+  const el=document.getElementById('fiche-'+key);
+  if(el) el.classList.add('active');
+  const btn=document.getElementById('btn-'+key);
+  if(btn) btn.classList.add('active');
+}
+
+// ── MATRICE
+function buildMatrix(){
+  const evaluateurs=["ChatGPT 5.3","Claude Sonnet 4.6","Gemini 3","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+  const evalLabels=["ChatGPT","Claude","Gemini","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+  const table=document.getElementById('matrix-table');
+
+  let html=`<thead><tr><th>IA évaluée ↓ / Évaluateur →</th>`;
+  evalLabels.forEach(e=>{ html+=`<th>${e}</th>`; });
+  html+=`<th>Moy.</th></tr></thead><tbody>`;
+
+  IA_LIST.forEach(ia=>{
+    html+=`<tr><td class="row-header" style="color:${IA_COLORS[ia]||'#7c6dfa'}">${ia}</td>`;
+    let rowScores=[];
+    evaluateurs.forEach((ev,ei)=>{
+      const row=RAW.find(r=>r.ia===ia && r.evaluateur===ev);
+      if(row){
+        const s=row.moyenne;
+        rowScores.push(s);
+        const isDiag=ia===evalLabels[ei];
+        html+=`<td class="${isDiag?'diagonal':''} ${getClass(s)}">${s.toFixed(2)}</td>`;
+      } else {
+        html+=`<td style="color:var(--muted)">—</td>`;
+      }
+    });
+    const m=round2(avg(rowScores));
+    html+=`<td style="font-weight:700;font-family:'Syne',sans-serif;color:${getColorForScore(m)}">${m.toFixed(2)}</td>`;
+    html+='</tr>';
+  });
+
+  html+='</tbody>';
+  table.innerHTML=html;
+}
+
+// ── BIAIS
+function buildBiais(){
+  const evaluateurs=["ChatGPT 5.3","Claude Sonnet 4.6","Gemini 3","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+  const evalLabels=["ChatGPT","Claude","Gemini","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+  const allMoyennes=RAW.map(r=>r.moyenne);
+  const globalMoyRaw=avg(allMoyennes);
+
+  const el=document.getElementById('biais-grid');
+  el.innerHTML=evalLabels.map((ev,ei)=>{
+    const rows=RAW.filter(r=>r.evaluateur===evaluateurs[ei]);
+    const myMoyRaw=avg(rows.map(r=>r.moyenne));
+    const myMoy=round2(myMoyRaw);
+    const diff=round2(myMoyRaw-globalMoyRaw);
+    const selfRow=rows.find(r=>r.ia===ev);
+    const selfScore=selfRow?selfRow.moyenne:null;
+
+    const topRows=[...rows].sort((a,b)=>b.moyenne-a.moyenne).slice(0,3);
+    const botRows=[...rows].sort((a,b)=>a.moyenne-b.moyenne).slice(0,2);
+
+    const c=IA_COLORS[ev]||'#7c6dfa';
+    return `<div class="biais-card">
+      <h4 style="color:${c}">${ev}</h4>
+      <div class="biais-row"><span class="lbl">Moy. donnée</span><span class="val ${diff>=0.1?'pos':diff<=-0.1?'neg':'neu'}">${myMoy.toFixed(2)}</span></div>
+      <div class="biais-row"><span class="lbl">Auto-éval.</span><span class="val">${selfScore?selfScore.toFixed(2):'—'}</span></div>
+      <div class="biais-row"><span class="lbl">Écart global</span><span class="val ${diff>=0.1?'pos':diff<=-0.1?'neg':'neu'}">${diff>=0?'+':''}${diff.toFixed(2)}</span></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">Meilleures notes →</div>
+      ${topRows.map(r=>`<div class="biais-row"><span class="lbl">${r.ia}</span><span class="val high">${r.moyenne.toFixed(2)}</span></div>`).join('')}
+      <div style="margin-top:4px;font-size:11px;color:var(--muted)">Notes les plus basses →</div>
+      ${botRows.map(r=>`<div class="biais-row"><span class="lbl">${r.ia}</span><span class="val low">${r.moyenne.toFixed(2)}</span></div>`).join('')}
+    </div>`;
+  }).join('');
+
+  // Auto eval chart (construit ici pour ne pas dépendre de la section Graphiques)
+  const evalNames=["ChatGPT","Claude","Gemini","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+  const evalMapping={"ChatGPT":"ChatGPT 5.3","Claude":"Claude Sonnet 4.6","Gemini":"Gemini 3","Meta IA":"Meta IA","Copilot":"Copilot","Le Chat":"Le Chat","DeepSeek":"DeepSeek","Perplexity":"Perplexity","Grok":"Grok","Kimi":"Kimi"};
+  const selfScores=evalNames.map(ia=>{
+    const r=RAW.find(row=>row.ia===ia&&row.evaluateur===evalMapping[ia]);
+    return r?r.moyenne:null;
+  });
+  const receivedScores=evalNames.map(ia=>{
+    const rows=RAW.filter(r=>r.ia===ia&&r.evaluateur!==evalMapping[ia]);
+    return round2(avg(rows.map(r=>r.moyenne)));
+  });
+  const autoColors=evalNames.map(ia=>IA_COLORS[ia]||'#7c6dfa');
+  new Chart(document.getElementById('chart-auto'),{
+    type:'bar',
+    data:{labels:evalNames,datasets:[
+      {label:'Auto-évaluation',data:selfScores,backgroundColor:'rgba(124,109,250,0.8)',borderRadius:4},
+      {label:'Moy. reçue des autres',data:receivedScores,backgroundColor:'rgba(79,209,165,0.8)',borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#888899'}}},scales:{y:{min:2,max:5.5,ticks:{color:'#888899'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#888899'},grid:{display:false}}}}
+  });
+}
+
+// ── CHARTS
+let chartsBuilt=false;
+function buildCharts(){
+  if(chartsBuilt)return; chartsBuilt=true;
+  const agg=getAggregate();
+  const labels=agg.map(d=>d.ia);
+  const colors=labels.map(ia=>IA_COLORS[ia]||'#7c6dfa');
+
+  // Legend
+  const legEl=document.getElementById('legend-bar');
+  legEl.innerHTML=agg.map((d,i)=>`<span style="display:flex;align-items:center;gap:4px"><span class="legend-dot" style="background:${colors[i]}"></span>${d.ia}</span>`).join('');
+
+  // Bar
+  new Chart(document.getElementById('chart-bar'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'Score moyen',data:agg.map(d=>d.moyenne),backgroundColor:colors,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:2.5,max:5.5,ticks:{color:'#888899'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#888899'},grid:{display:false}}}}
+  });
+
+  // Radar
+  new Chart(document.getElementById('chart-radar'),{
+    type:'radar',
+    data:{
+      labels:['Code','Raisonnement','Créativité','Fiabilité'],
+      datasets:agg.slice(0,5).map((d,i)=>({
+        label:d.ia,data:[d.code,d.raisonnement,d.creativite,d.fiabilite],
+        borderColor:colors[i],backgroundColor:colors[i]+'22',pointBackgroundColor:colors[i],borderWidth:2,pointRadius:3
+      }))
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,0.08)'},pointLabels:{color:'#888899',font:{size:12}},min:2.5,max:5.5}}}
+  });
+
+  // Rank (lower = better)
+  const evaluateurs=["ChatGPT 5.3","Claude Sonnet 4.6","Gemini 3","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+  const rankData=IA_LIST.map(ia=>{
+    const rows=RAW.filter(r=>r.ia===ia);
+    return round2(avg(rows.map(r=>r.classement)));
+  });
+  const rankColors=IA_LIST.map(ia=>IA_COLORS[ia]||'#7c6dfa');
+  new Chart(document.getElementById('chart-rank'),{
+    type:'bar',
+    data:{labels:IA_LIST,datasets:[{label:'Classement moyen',data:rankData,backgroundColor:rankColors,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{reverse:true,min:0,max:11,ticks:{color:'#888899'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#888899'},grid:{display:false}}}}
+  });
+
+  // Grouped
+  new Chart(document.getElementById('chart-grouped'),{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[
+        {label:'Code',data:agg.map(d=>d.code),backgroundColor:'#7c6dfa',borderRadius:4},
+        {label:'Raisonnement',data:agg.map(d=>d.raisonnement),backgroundColor:'#4fd1a5',borderRadius:4},
+        {label:'Créativité',data:agg.map(d=>d.creativite),backgroundColor:'#f5a623',borderRadius:4},
+        {label:'Fiabilité',data:agg.map(d=>d.fiabilite),backgroundColor:'#e84d7a',borderRadius:4}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#888899'}}},scales:{y:{min:2,max:5.5,ticks:{color:'#888899'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#888899'},grid:{display:false}}}}
+  });
+
+  // Per evaluator
+  const evalLabels=["ChatGPT","Claude","Gemini","Meta IA","Copilot","Le Chat","DeepSeek","Perplexity","Grok","Kimi"];
+  const evalScores=evaluateurs.map((ev,i)=>{
+    const rows=RAW.filter(r=>r.evaluateur===ev);
+    return round2(avg(rows.map(r=>r.moyenne)));
+  });
+  const evalColors=evalLabels.map(ia=>IA_COLORS[ia]||'#7c6dfa');
+  new Chart(document.getElementById('chart-evaluator'),{
+    type:'bar',
+    data:{labels:evalLabels,datasets:[{label:'Moy. des scores donnés',data:evalScores,backgroundColor:evalColors,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:3,max:5,ticks:{color:'#888899'},grid:{color:'rgba(255,255,255,0.05)'}},x:{ticks:{color:'#888899'},grid:{display:false}}}}
+  });
+
+}
+
+// ── NAV
+function showSection(id){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a=>{ if(a.getAttribute('onclick')?.includes(id)) a.classList.add('active'); });
+  if(id==='graphiques') setTimeout(buildCharts,100);
+  window.scrollTo(0,0);
+}
+
+function switchTab(el,tabId){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['tab-global','tab-code','tab-raisonnement','tab-creativite','tab-fiabilite'].forEach(id=>{
+    document.getElementById(id).style.display=id===tabId?'block':'none';
+  });
+}
+
+// ── INIT
+buildOverviewCards();
+buildPodium();
+buildRankingTable('table-global','moyenne');
+buildRankingTable('table-code','code');
+buildRankingTable('table-raisonnement','raisonnement');
+buildRankingTable('table-creativite','creativite');
+buildRankingTable('table-fiabilite','fiabilite');
+buildFiches();
+buildMatrix();
+buildBiais();
+</script>
+</body>
+</html>
