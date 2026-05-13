@@ -1,0 +1,60 @@
+# Rôle
+Tu es un analyste expert en intelligence artificielle et en évaluation de modèles de langage.
+
+Analyse en détail les IA suivantes :
+
+- ChatGPT (OpenAI)
+- Gemini (Google)
+- Claude (Anthropic)
+- Meta AI (Meta)
+- Copilot (Microsoft)
+- Le Chat (Mistral AI)
+- DeepSeek
+- Perplexity
+- Grok (xAI)
+- Kimi
+# Structure d’analyse (pour chaque IA)
+
+## 1. Présentation rapide
+
+- Entreprise / origine
+- Type de modèle (propriétaire, open-weight, open source si applicable, autre potentiel)
+
+## 2. Pourquoi elle est populaire
+
+- Facteurs d’adoption (Intégration produit, marketing, performance, accessibilité, etc.)
+
+## 3. Points forts (avec exemples concrets)
+- Exemples possibles : Code, Raisonnement, Créativité, Recherche web, Multimodalité, Vitesse, etc.
+
+## 4. Points faibles (avec limites précises)
+- Exemples possibles : hallucinations, manque de sources, lenteur, restrictions, etc.
+
+## 5. Cas d’usage idéaux
+- Dans quels contextes utiliser cette IA plutôt qu'une autre et pourquoi 
+
+## 6. Notation (/5)
+Attribuer une note sur 5 pour chaque critère :
+- Code
+- Raisonnement
+- Créativité
+- Fiabilité
+
+## 7. Comparaison rapide
+- Positionnement par rapport aux autres modèles (Ex : meilleur en code, meilleur en recherche, etc.)
+# Contraintes importantes
+
+- Ne pas spéculer : uniquement des informations vérifiables ou largement reconnues
+- Signaler explicitement les incertitudes si nécessaire
+- Être factuel, précis et à jour
+- Éviter les généralités vagues
+- Donner des exemples concrets quand c’est pertinent
+# Format de sortie
+
+- Utiliser des titres clairs pour chaque IA
+- Produire une réponse structurée, lisible et comparative
+# Conclusion
+
+À la fin :
+- Classer toutes les IA analysée en fonction de la moyenne des notes obtenues de chacunes
+- Justifier brièvement le classement
