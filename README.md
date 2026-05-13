@@ -65,4 +65,5 @@ Les recherches ont étés effectué a la main avec le prompt que vous pouvez ret
 /
 ├── index.html
 ├── prompt.txt
+├── images/
 ├── README.md
