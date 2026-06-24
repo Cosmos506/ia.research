@@ -71,3 +71,9 @@ Je tiens à preciser que les données ont été verifié après la conception du
 ├── prompt.txt
 ├── images/
 ├── README.md
+```
+
+---
+
+*Talk is cheap, show me the code.*
+
